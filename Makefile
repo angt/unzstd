@@ -1,10 +1,10 @@
-CFLAGS = -O2 -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections -s
+NAME := unzstd
+CFLAGS = -O2 -ffunction-sections -fdata-sections -fno-unwind-tables
+LDFLAGS = -Wl,--gc-sections -Wl,--strip-all
 
 .PHONY: all
-all: aarch64-macos-unzstd \
-     aarch64-linux-unzstd \
-     x86_64-linux-unzstd
+all: aarch64-macos-$(NAME) x86_64-macos-$(NAME) \
+     aarch64-linux-$(NAME) x86_64-linux-$(NAME)
 
 zstddeclib.c:
 	git clone https://github.com/facebook/zstd -b release
@@ -12,15 +12,14 @@ zstddeclib.c:
 	cp zstd/build/single_file_libs/zstddeclib.c .
 	rm -rf zstd
 
-aarch64-macos-unzstd: unzstd.c zstddeclib.c
-	zig cc -target aarch64-macos-none $(CFLAGS) $< -o $@ $(LDFLAGS)
+%-linux-$(NAME): LDFLAGS += -static
 
-aarch64-linux-unzstd: unzstd.c zstddeclib.c
-	zig cc -target aarch64-linux-musl $(CFLAGS) $< -o $@ -static $(LDFLAGS)
+%-linux-$(NAME): unzstd.c zstddeclib.c
+	zig cc -target $*-linux-musl $(CFLAGS) $< -o $@ $(LDFLAGS)
 
-x86_64-linux-unzstd: unzstd.c zstddeclib.c
-	zig cc -target x86_64-linux-musl $(CFLAGS) $< -o $@ -static $(LDFLAGS)
+%-macos-$(NAME): unzstd.c zstddeclib.c
+	zig cc -target $*-macos-none $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 .PHONY: clean
 clean:
-	git clean -xfd
+	rm -f *-$(NAME)
