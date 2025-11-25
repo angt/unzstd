@@ -1,2 +1,3 @@
-*-unzstd
+.zig-cache
+zig-out
 zstddeclib.c
